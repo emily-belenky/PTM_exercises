@@ -1,83 +1,80 @@
-package configs;
+package test;
 
-import graph.Agent;
-import graph.ParallelAgent;
-
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
-
-
-/// Advanced Programming exercise 4
-
+import java.io.*;
+import java.util.*;
 
 public class GenericConfig implements Config {
-	
-	// Data Members
-    private String configFile;
-    private List<ParallelAgent> agents = new ArrayList<>();
+    private String configFile; // Path to the configuration file
+    private final List<Agent> agents = new ArrayList<>();
 
-    // Methods
     @Override
     public void create() {
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(configFile))) {
-        	
-        	// Read File
+        try (BufferedReader br = new BufferedReader(new FileReader(configFile))) {
             List<String> lines = new ArrayList<>();
             String line;
-            
-            while ((line = reader.readLine()) != null) {
+
+            // Read all lines from the configuration file
+            while ((line = br.readLine()) != null) {
                 lines.add(line);
             }
-            
-            // Check valid input
+
+            // Validate the configuration file format
             if (lines.size() % 3 != 0) {
-                throw new IllegalArgumentException("Invalid config file format.");
+                throw new IllegalArgumentException("Invalid configuration file format. Expected sets of 3 lines.");
             }
 
-            // Iterate over the lines
+            // Parse and create agents
             for (int i = 0; i < lines.size(); i += 3) {
-            	
-            	// Parse lines
                 String className = lines.get(i);
                 String[] subs = lines.get(i + 1).split(",");
                 String[] pubs = lines.get(i + 2).split(",");
-                
-                // Create instance
-                Class<?> agentClass = Class.forName(className);
-                Constructor<?> constructor = agentClass.getConstructor(String[].class, String[].class);
-                
-                Agent agent = (Agent) constructor.newInstance((Object) subs, (Object) pubs);
-                agents.add(new ParallelAgent(agent, 10));
+
+                // Create agent dynamically using reflection
+                Class<?> clazz = Class.forName(className);
+                Agent agent = (Agent) clazz.getConstructor(String[].class, String[].class)
+                                           .newInstance((Object) subs, (Object) pubs);
+
+                // Add agent to the list for future management
+                agents.add(agent);
             }
-        } catch (IOException | ReflectiveOperationException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     @Override
     public String getName() {
-        return "GenericConfig";
+        return "Generic Configuration";
     }
 
     @Override
     public int getVersion() {
-        return 1;
+        return 1; // Version number for this implementation
     }
 
     @Override
     public void close() {
-    	
-        for (ParallelAgent agent : agents) {
+        // Close all agents to clean up resources
+        for (Agent agent : agents) {
             agent.close();
         }
     }
 
-	public void setConfFile(String configFile) {
-        this.configFile = configFile;
+    // Set the configuration file with fallback to "src/test/simple.conf"
+    public void setConfFile(String configFile) {
+        File file = new File(configFile);
+
+        // Check if the file exists at the provided location
+        if (!file.exists()) {
+            // Fallback to "src/test/" directory
+            file = new File("src/" + configFile);
+        }
+
+        // If the file still doesn't exist, throw an exception
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Configuration file not found at: " + configFile);
+        }
+
+        this.configFile = file.getPath(); // Save the absolute path
     }
 }
