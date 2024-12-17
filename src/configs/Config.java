@@ -1,11 +1,8 @@
-package configs;
-
-// Config interface
-/// Advanced Programming exercise 3
+package test;
 
 public interface Config {
-    void create();
+	void create();
     String getName();
-    int getVersion();
+	int getVersion();
     void close();
 }
