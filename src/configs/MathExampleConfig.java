@@ -1,20 +1,16 @@
-package configs;
+package test;
 
-
-import graph.BinOpAgent;
-
-/// Advanced Programming exercise 3
-
+/**
+ * Example configuration for mathematical operations in a computational graph.
+ */
 public class MathExampleConfig implements Config {
 
     @Override
     public void create() {
-
-        // Create BinOpAgent instances
-        new BinOpAgent("plus", new String[]{"A", "B"}, new String[]{"R1"}, (x, y) -> x + y);
-        new BinOpAgent("minus", new String[]{"A", "B"}, new String[]{"R2"}, (x, y) -> x - y);
-        new BinOpAgent("mul", new String[]{"R1", "R2"}, new String[]{"R3"}, (x, y) -> x * y);
-
+        // Pass input and output topics as individual strings
+        new BinOpAgent("plus", "A", "B", "R1", (x, y) -> x + y);
+        new BinOpAgent("minus", "A", "B", "R2", (x, y) -> x - y);
+        new BinOpAgent("mul", "R1", "R2", "R3", (x, y) -> x * y);
     }
 
     @Override
@@ -27,10 +23,8 @@ public class MathExampleConfig implements Config {
         return 1;
     }
 
-	@Override
-	public void close() {
-		// TODO Auto-generated method stub
-		
-	}
-
+    @Override
+    public void close() {
+        // Optional cleanup
+    }
 }
