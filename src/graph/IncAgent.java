@@ -1,72 +1,52 @@
-package graph;
-
-/// Advanced Programming exercise 4
-
+package test;
 
 public class IncAgent implements Agent {
-	
-	// Data Members
-    private String[] subs;
-    private String[] pubs;
-    private Double value;
+    private final String name;
+    private final String subs;
+    private final String pubs;
+    private final TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
+    private Double x;
 
-    // Constructor
     public IncAgent(String[] subs, String[] pubs) {
-    	
-        this.subs = subs;
-        this.pubs = pubs;
-        
-        subscribeToInputTopic();
-        publishToOutputTopic();
+        this.subs = subs[0];
+        this.pubs = pubs[0];
+        this.name = "IncAgent";
+        this.subscribe();
+        this.register();
+        this.reset();
     }
 
-    // Methods
-    private void subscribeToInputTopic() {
-    	if((subs.length > 0) == false)
-    		return;
-        TopicManagerSingleton.get().getTopic(subs[0]).subscribe(this);
+    private void subscribe() {
+        this.topicManager.getTopic(this.subs).subscribe(this);
     }
 
-    private void publishToOutputTopic() {
-     	if((pubs.length > 0) == false)
-    		return;
-        TopicManagerSingleton.get().getTopic(pubs[0]).addPublisher(this);
+    private void register() {
+        this.topicManager.getTopic(this.pubs).addPublisher(this);
     }
 
     @Override
     public String getName() {
-        return "IncAgent";
+        return this.name;
     }
 
     @Override
     public void reset() {
-        this.value = 0.0;
+        this.x = 0.0;
     }
 
     @Override
     public void callback(String topic, Message msg) {
-    	
-    	if((subs.length > 0) == false)
-    		return;
-    	
-        if (topic.equals(subs[0]) == true) {
-        	
-            this.value = msg.asDouble;
-            Double res = this.value + 1;
-            publish(res);
+        if (Double.isNaN(msg.asDouble)) {
+            return;
         }
-    }
-
-    private void publish(double result) {
-    	
-    	if((pubs.length > 0) == false)
-    		return;
-    	
-        TopicManagerSingleton.get().getTopic(pubs[0]).publish(new Message(result));
+        this.x = msg.asDouble;
+        this.topicManager.getTopic(this.pubs).publish(new Message(this.x + 1));
+        this.reset();
     }
 
     @Override
     public void close() {
-        
+        this.topicManager.getTopic(this.subs).unsubscribe(this);
+        this.topicManager.getTopic(this.pubs).removePublisher(this);
     }
 }
