@@ -1,44 +1,26 @@
-package graph;
+package test;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-/// Advanced Programming exercise 2
-
 public class ParallelAgent implements Agent {
+    private final BlockingQueue<Message> queue;
+    private final Agent agent;
+    private final Thread readThread;
+    private static final String divider = "Divider:";
+    private volatile boolean running;
 
-    // Helper pair class
-    private static class Pair<T, K>{
-
-        private T  item1;
-        private K item2;
-
-        public Pair(T item1, K item2){
-            this.item1 = item1;
-            this.item2 = item2;
-        }
+    public ParallelAgent(Agent agent, int capacity) {
+        this.queue = new ArrayBlockingQueue<>(capacity);
+        this.agent = agent;
+        this.readThread = new Thread(this::readThreadFunction);
+        this.running = true;
+        this.readThread.start();
     }
 
-    // Data Members
-    private volatile boolean stop;
-    private Agent agent;
-    private BlockingQueue<Pair<String,Message>> messageQueue;
-
-    // Sentinel value for closing the service
-    private static final Pair<String, Message> CLOSE_SENTINEL = new Pair<>(null, null);
-
-    // Constructor
-    public ParallelAgent(Agent anyAgent, int capacity){
-        this.agent = anyAgent;
-        this.messageQueue = new ArrayBlockingQueue<Pair<String,Message>>(capacity);
-        this.stop = false;
-        startActiveObject();
-    }
-
-    // Methods
     @Override
     public String getName() {
-        return agent.getName();
+        return this.agent.getName();
     }
 
     @Override
@@ -47,48 +29,38 @@ public class ParallelAgent implements Agent {
     }
 
     @Override
-    public void callback(String topic, Message msg)  {
-        Pair<String, Message> pair = new Pair<String, Message>(topic, msg);
-        addToQueue(pair);
+    public void callback(String topic, Message msg) {
+        try {
+            Message topicMessageMerge = new Message(String.format("%s%s%s", topic, divider, msg.asText));
+            this.queue.put(topicMessageMerge);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void close() {
-        stop = true;
-        addToQueue(CLOSE_SENTINEL);
+        this.running = false;
+        this.readThread.interrupt();
+        this.agent.close();
     }
 
-
-    // Start active object run in background
-    public void startActiveObject() {
-        new Thread(() -> {
-            while (stop == false) {
-                try {
-                    Pair<String, Message> topicMessage = this.messageQueue.take();
-                    if (topicMessage == CLOSE_SENTINEL) {
-                        break;
-                    }
-                    applyCallbackOnAgent(topicMessage);
-                } catch (InterruptedException e) {
-                    break;
-                }
+    private void readThreadFunction() {
+        while (this.running) {
+            try {
+                Message msg = this.queue.take();
+                this.agent.callback(getTopic(msg), getMessage(msg));
+            } catch (InterruptedException e) {
+                break;
             }
-        }).start();
-    }
-
-    // Apply callback on the agent
-    private void applyCallbackOnAgent(Pair<String, Message> topicMessage) {
-        String topic = topicMessage.item1;
-        Message message = topicMessage.item2;
-        this.agent.callback(topic, message);
-    }
-
-    // Add item to blocking queue
-    private void addToQueue(Pair<String, Message> pair) {
-        try {
-            this.messageQueue.put(pair);
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
         }
+    }
+
+    private String getTopic(Message msg) {
+        return msg.asText.split(divider, 2)[0];
+    }
+
+    private Message getMessage(Message msg) {
+        return new Message(msg.asText.split(divider, 2)[1]);
     }
 }
