@@ -1,81 +1,65 @@
-package mystuff.scripts.ptm.PTM_exercises.src.graph;
-
-/// Advanced Programming exercise 4
-
+package test;
 
 public class PlusAgent implements Agent {
-	
-	// Data Members
-    private String[] subs;
-    private String[] pubs;
-    private double x = 0;
-    private double y = 0;
+    private final String name;
+    private final String[] subs;
+    private final String[] pubs;
+    private final TopicManagerSingleton.TopicManager topicManager = TopicManagerSingleton.get();
+    private Double x;
+    private Double y;
 
-
-    // Constructor
     public PlusAgent(String[] subs, String[] pubs) {
         this.subs = subs;
         this.pubs = pubs;
-
-    	
-        subscribeToInputTopics();
-        publishToOutputTopic();
+        this.name = "PlusAgent";
+        this.subscribe();
+        this.register();
+        this.reset();
     }
 
-    // Methods
-    
-    private void subscribeToInputTopics() {
-    	
-        if((subs.length > 1) == false)
-    		return;
-        
-        TopicManagerSingleton.get().getTopic(subs[0]).subscribe(this);
-        TopicManagerSingleton.get().getTopic(subs[1]).subscribe(this);
+    private void subscribe() {
+        this.topicManager.getTopic(this.subs[0]).subscribe(this);
+        this.topicManager.getTopic(this.subs[1]).subscribe(this);
     }
 
-    private void publishToOutputTopic() {
-    	
-    	if((pubs.length > 0) == false)
-    		return;
-    	TopicManagerSingleton.get().getTopic(pubs[0]).addPublisher(this);
+    private void register() {
+        this.topicManager.getTopic(this.pubs[0]).addPublisher(this);
     }
 
     @Override
     public String getName() {
-        return "PlusAgent";
+        return this.name;
     }
 
     @Override
     public void reset() {
-        this.x = 0;
-        this.y = 0;
+        this.x = 0.0;
+        this.y = 0.0;
     }
 
     @Override
     public void callback(String topic, Message msg) {
-    	
-    	if((subs.length > 1) == false)
-    		return;
-    	
-        if (topic.equals(subs[0]) == true) {
+        if (Double.isNaN(msg.asDouble)) {
+            return;
+        }
+        if (topic.equals(this.subs[0])) {
             this.x = msg.asDouble;
-        } else if (topic.equals(subs[1]) == true) {
+        } else if (topic.equals(this.subs[1])) {
             this.y = msg.asDouble;
         }
-        if (Double.isNaN(x) == false && Double.isNaN(y) == false) {
-            Double res = this.x + this.y;
-            publish(res);
+        if (this.x != 0.0 && this.y != 0.0) {
+            this.topicManager.getTopic(this.pubs[0]).publish(new Message(this.x + this.y));
+            this.reset();
         }
-    }
-
-    private void publish(double result) {
-    	if(pubs.length > 0)
-    		TopicManagerSingleton.get().getTopic(pubs[0]).publish(new Message(result));
     }
 
     @Override
     public void close() {
-       
+        for (String s : this.subs) {
+            this.topicManager.getTopic(s).unsubscribe(this);
+        }
+        for (String s : this.pubs) {
+            this.topicManager.getTopic(s).removePublisher(this);
+        }
     }
-
 }
