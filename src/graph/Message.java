@@ -1,45 +1,50 @@
-package graph;
+package test;
 
 import java.util.Date;
 
-/// Advanced Programming exercise 1
-
 public class Message {
-
-    // Fields
     public final byte[] data;
     public final String asText;
     public final double asDouble;
     public final Date date;
 
+    public Message(String messageString) {
+        this.asText = messageString;
+        this.data = convertStringToBytes(messageString);
+        this.asDouble = convertStringToDouble(messageString);
+        this.date = new Date();
+    }
 
-    // Constructor
-    public Message(String newMessage) {
-        this.asText = newMessage;
+    public Message(byte[] messageBytes) {
+        this(convertBytesToString(messageBytes));
+    }
 
-        // Attempt to parse the string as a double, if it fails, set asDouble to NaN
-        double tempDouble;
+    public Message(double messageDouble) {
+        this(convertDoubleToString(messageDouble));
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Message: text='%s', double=%.2f, date=%s", asText, asDouble, date);
+    }
+
+    private static String convertDoubleToString(double messageDouble) {
+        return Double.toString(messageDouble);
+    }
+
+    private static String convertBytesToString(byte[] messageBytes) {
+        return new String(messageBytes);
+    }
+
+    private static byte[] convertStringToBytes(String messageString) {
+        return messageString.getBytes();
+    }
+
+    private static double convertStringToDouble(String messageString) {
         try {
-            tempDouble = Double.parseDouble(newMessage);
+            return Double.parseDouble(messageString);
         } catch (NumberFormatException e) {
-            tempDouble = Double.NaN;
+            return Double.NaN;
         }
-
-        this.asDouble = tempDouble;
-        this.date = new Date(); // Current date and time
-        this.data = newMessage.getBytes();
     }
-
-
-    // Constructor for byte array input
-    public Message(byte[] newMessage)  {
-        this(new String(newMessage));
-    }
-
-    // Constructor for double input
-    public Message(double newMessage) {
-        this(Double.toString(newMessage));
-    }
-
-
 }
