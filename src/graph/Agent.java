@@ -1,11 +1,4 @@
-package graph;
-
-/// Advanced Programming exercise 1
-
-import java.util.*;
-import java.util.Map;
-import java.util.function.BiFunction;
-import java.util.function.Function;
+package test;
 
 public interface Agent {
     String getName();
